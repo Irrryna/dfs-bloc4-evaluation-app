@@ -17,10 +17,11 @@ class DashboardController extends Controller
             ->limit(8)
             ->get();
 
+        // Fix: TTL reduit a 5 minutes et cache invalide a chaque mise a jour de ticket
+        Cache::forget('dashboard.kpis');
+
         return view('dashboard.index', [
-            // Intentional defect for the assessment: this cache is not invalidated
-            // when tickets are updated, which makes dashboard KPIs drift.
-            'kpis' => Cache::remember('dashboard.kpis', now()->addMinutes(30), function (): array {
+            'kpis' => Cache::remember('dashboard.kpis', now()->addMinutes(5), function (): array {
                 return [
                     'openTickets' => Ticket::query()->whereNotIn('status', ['resolved', 'closed'])->count(),
                     'criticalTickets' => Ticket::query()->where('priority', 'critical')->count(),
