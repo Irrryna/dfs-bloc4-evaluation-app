@@ -1,0 +1,28 @@
+name: Deploy OpsTrack
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy to production
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ubuntu
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            cd /var/www/opstrack
+            sudo composer install --no-interaction --no-dev --optimize-autoloader
+            sudo php artisan config:cache
+            sudo php artisan route:cache
+            sudo php artisan migrate --force
+            sudo systemctl reload apache2
+            pm2 restart dispatch-dashboard
+            echo "Deployment completed $(date)"
